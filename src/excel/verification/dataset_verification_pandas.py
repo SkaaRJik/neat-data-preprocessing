@@ -1,10 +1,9 @@
-import datetime
-
+import numpy as np
+import pandas as pd
 from pandas import ExcelFile, DataFrame
 from sklearn.impute import SimpleImputer
+
 from src.excel.verification.dataset_verification import DatasetVerification
-import pandas as pd
-import numpy as np
 
 
 class DatasetVerificationPandas(DatasetVerification):
@@ -42,7 +41,8 @@ class DatasetVerificationPandas(DatasetVerification):
         legend_values: list = df[df.columns.values[0]].values
         headers: list = df.columns.values
         legend_error_protocol, legend_info_protocol, legend_inc = self._parse_legend_values(legend_values)
-        headers_error_protocol, legend_header, data_headers = self._parse_headers(headers, len(df[df.columns.values[1:]].T))
+        headers_error_protocol, legend_header, data_headers = self._parse_headers(headers,
+                                                                                  len(df[df.columns.values[1:]].T))
         values_error_protocol, legend_info_protocol, df = self._parse_values(df)
         print(df[df.columns.values[1]])
         return legend_error_protocol, legend_info_protocol, legend_inc, headers_error_protocol, legend_header, \

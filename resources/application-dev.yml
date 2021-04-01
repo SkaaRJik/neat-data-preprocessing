@@ -1,0 +1,24 @@
+rabbitmq:
+  host: localhost
+  port: 5672
+  username: user
+  password: "1512"
+  input:
+    exchange: data-preprocessing-service
+    queues:
+      verificationDocument:
+        queueName: data-verification
+        routingKey: data
+  output:
+    exchange: user-queries-service
+    queues:
+      verificationResult:
+        queueName: verification-result
+        routingKey: verification-result
+
+samba:
+  host: localhost
+  username: victor
+  password: 1512
+  shared_directory: neat-store
+
