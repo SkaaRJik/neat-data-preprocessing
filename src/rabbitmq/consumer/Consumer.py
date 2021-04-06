@@ -4,6 +4,9 @@ import pika
 from pika.exchange_type import ExchangeType
 import logging.config
 
+from src.config.RabbitMQConfig import RabbitMQConfig
+from src.rabbitmq.MessageWriter import MessageWriter
+
 logging.config.fileConfig('../resources/logging.conf')
 LOGGER = logging.getLogger('exampleApp')
 
@@ -20,8 +23,8 @@ class Consumer(object):
 
     __metaclass__ = ABCMeta
 
-    def __init__(self, queue: str, routing_key: str,
-                 exchange: str = "", exchange_type: ExchangeType = ExchangeType.topic):
+    def __init__(self, rabbit_mq_config: RabbitMQConfig, queue: str, routing_key: str,
+                 exchange: str = "", exchange_type: ExchangeType = ExchangeType.direct):
 
         self._connection_parameters = None
         self.should_reconnect = False
@@ -40,7 +43,8 @@ class Consumer(object):
         self.EXCHANGE_TYPE = exchange_type
         self.QUEUE = queue
         self.ROUTING_KEY = routing_key
-
+        self._rabbit_mq_writer: MessageWriter = None
+        self._rabbit_mq_config: RabbitMQConfig = rabbit_mq_config
         #self.on_message = callback
 
     def set_connection_params(self, connection_parameters: pika.ConnectionParameters):
@@ -351,3 +355,6 @@ class Consumer(object):
             else:
                 self._connection.ioloop.stop()
             LOGGER.info('Stopped')
+
+    def set_writer(self, rabbit_mq_writer: MessageWriter):
+        self._rabbit_mq_writer = rabbit_mq_writer

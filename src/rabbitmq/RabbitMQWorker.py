@@ -1,8 +1,11 @@
 import logging
 import logging.config
 import time
+from pika.exchange_type import ExchangeType
+import pika
 
-from src.config import RabbitMQConfig
+from src.config.RabbitMQConfig import RabbitMQConfig
+from src.rabbitmq.MessageWriter import MessageWriter
 from src.rabbitmq.consumer.Consumer import Consumer
 
 logging.config.fileConfig('../resources/logging.conf')
@@ -18,6 +21,22 @@ class RabbitMQWorker:
         self._reconnect_delay = 0
         self._rabbit_mq_config = rabbit_mq_config;
         self._consumers: list[Consumer] = []
+        self._rabbit_mq_writer = MessageWriter(rabbit_mq_config)
+
+        self._conn = pika.BlockingConnection(parameters=rabbit_mq_config.connection_parameters)
+
+        self._chan = self._conn.channel()
+
+        self._registrateExchangesAndTopics(rabbit_mq_config)
+
+
+
+        # If publish causes the connection to become blocked, then this conn.close()
+        # would hang until the connection is unblocked, if ever. However, the
+        # blocked_connection_timeout connection parameter would interrupt the wait,
+        # resulting in ConnectionClosed exception from BlockingConnection (or the
+        # on_connection_closed callback call in an asynchronous adapter)
+        self._conn.close()
 
     def run(self):
         while True:
@@ -27,11 +46,14 @@ class RabbitMQWorker:
             except KeyboardInterrupt:
                 for consumer in self._consumers:
                     consumer.stop()
+                    self._rabbit_mq_writer.closeConnection()
                 break
             self._maybe_reconnect()
 
+
     def add_consumer(self, consumer: Consumer):
-        consumer.set_connection_params(self._rabbit_mq_config.get_connection_parameters())
+        consumer.set_connection_params(self._rabbit_mq_config.connection_parameters)
+        consumer.set_writer(self._rabbit_mq_writer)
         self._consumers.append(consumer)
 
     def _maybe_reconnect(self):
@@ -47,9 +69,9 @@ class RabbitMQWorker:
         if consumer.was_consuming:
             self._reconnect_delay = 0
         else:
-            self._reconnect_delay += 1
-        if self._reconnect_delay > 30:
-            self._reconnect_delay = 30
+            self._reconnect_delay += 60
+        if self._reconnect_delay >= 300:
+            self._reconnect_delay = 300
         return self._reconnect_delay
 
     def close_connection(self):
@@ -78,3 +100,10 @@ class RabbitMQWorker:
     # def close_connection(self):
     #     self.stop()
     #     self._connection.close()
+    def _registrateExchangesAndTopics(self, rabbit_mq_config: RabbitMQConfig):
+        topics_configs = [rabbit_mq_config.OUTPUT_VERIFICATION_RESULT_CONFIG]
+
+        for config in topics_configs:
+            self._chan.exchange_declare(exchange=config.get("exchange"), exchange_type=ExchangeType.direct, durable=True)
+            self._chan.queue_declare(queue=config.get("queue"), durable=True)
+            self._chan.queue_bind(queue=config.get("queue"), exchange=config.get("exchange"), routing_key=config.get("routingKey"))

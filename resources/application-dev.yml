@@ -1,24 +1,30 @@
 rabbitmq:
+  heartbeat: 600
+  blocked_connection_timeout: 300
   host: localhost
   port: 5672
   username: user
   password: "1512"
   input:
-    exchange: data-preprocessing-service
-    queues:
-      verificationDocument:
-        queueName: data-verification
-        routingKey: data
+    verificationDocument:
+      exchange: data-preprocessing-service
+      queueName: verification-data
+      routingKey: verification-data
+    normalizeData:
+      exchange: data-preprocessing-service
+      queueName: normalization-data
+      routingKey: normalization-data
   output:
-    exchange: user-queries-service
-    queues:
-      verificationResult:
-        queueName: verification-result
-        routingKey: verification-result
+    verificationResult:
+      exchange: user-queries-service
+      queueName: verification-result
+      routingKey: verification-result
 
 samba:
-  host: localhost
+  host: 192.168.0.16
   username: victor
-  password: 1512
-  shared_directory: neat-store
+  password: "1512"
+  shared_directory: NEAT
+  netbios_name: NEAT
+  workgroup: WORKGROUP
 

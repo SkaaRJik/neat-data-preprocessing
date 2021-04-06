@@ -22,7 +22,7 @@ class DatasetVerificationPandas(DatasetVerification):
     # print(df.loc[1]) #Чтение построчно
     # print(df.columns.values) #Чтение заголовков в виде массива
     # print(df[df.columns.values[0]].values) #Чтение заголовков в виде массива
-    def verify_excel(self, file: str):
+    def verify_excel(self, file):
         xls: ExcelFile = pd.ExcelFile(file)
         df: DataFrame = xls.parse(0, parse_dates=False)
 
