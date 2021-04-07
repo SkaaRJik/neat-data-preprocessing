@@ -28,10 +28,8 @@ class SambaWorker(object):
 
     def upload(self, path_to_save, file):
         file_obj = open(file, 'rb')
-        try:
-            self.server.storeFile(self.shared_name, '/{0}'.format(path_to_save), file_obj)
-        except BaseException as ex:
-            LOGGER.exception(ex)
+        self.server.storeFile(self.shared_name, '/{0}'.format(path_to_save), file_obj)
+        file_obj.close()
 
     def download(self, fileName):
         file_obj = open(fileName, 'wb+')

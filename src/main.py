@@ -1,8 +1,11 @@
+import json
+
 import yaml
 import logging
 import logging.config
 from src.config.RabbitMQConfig import RabbitMQConfig
 from src.config.SambaConfig import SambaConfig
+from src.excel.verification.dataset_verification_pandas import DatasetVerificationPandas
 from src.rabbitmq.RabbitMQWorker import RabbitMQWorker
 from src.rabbitmq.consumer.VerifyDocuementConsumer import VerifyDocumentConsumer
 import traceback
@@ -42,10 +45,34 @@ def main():
             rabbitMqWorker.close_connection()
         if sambaWorker is not None:
             sambaWorker.close()
-    correct_file = '../resources/data.xlsx'
-    # file_date_empty = '../resources/data1.xlsx'
-    file_number_empty = '../resources/data2.xlsx'
 
+    # dataset_verification = DatasetVerificationPandas()
+    # correct_file = '../resources/data.xlsx'
+    # # # file_date_empty = '../resources/data1.xlsx'
+    # # file_number_empty = '../resources/data2.xlsx'
+    #
+    # # dataset_verification.verify_excel(correct_file)
+    # legend_error_protocol, legend_info_protocol, legend_inc, legend_values, headers_error_protocol, legend_header, \
+    # data_headers, values_error_protocol, values_info_protocol, dataframe_to_save = dataset_verification.verify_excel(
+    #     correct_file)
+    # verification_protocol = {
+    #     "projectId": 1,
+    #     "errors": VerifyDocumentConsumer.pack_error_protocols(legend_error_protocol=legend_error_protocol,
+    #                                          headers_error_protocol=headers_error_protocol,
+    #                                          values_error_protocol=values_error_protocol),
+    #     "info": VerifyDocumentConsumer.pack_info_protocols(legend_info_protocol=legend_info_protocol,
+    #                                       values_info_protocol=values_info_protocol),
+    #     "verifiedFile": '/tmp/{0}'.format("file_name.csv"),
+    #     "legend": {
+    #         "header": legend_header,
+    #         "data": legend_values,
+    #         "increment": legend_inc
+    #     },
+    #     "headers": data_headers,
+    # }
+    #
+    # encoded_body = json.dumps(verification_protocol)
+    # print(encoded_body)
 
 # dataset_verification = DatasetVerificationPandas()
 # dataset_verification.verify_excel(correct_file)

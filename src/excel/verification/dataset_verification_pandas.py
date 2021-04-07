@@ -22,7 +22,7 @@ class DatasetVerificationPandas(DatasetVerification):
     # print(df.loc[1]) #Чтение построчно
     # print(df.columns.values) #Чтение заголовков в виде массива
     # print(df[df.columns.values[0]].values) #Чтение заголовков в виде массива
-    def verify_excel(self, file):
+    def verify_excel(self, file) -> (list, list, dict, list, list, str, list, list, list, pd.DataFrame):
         xls: ExcelFile = pd.ExcelFile(file)
         df: DataFrame = xls.parse(0, parse_dates=False)
 
@@ -33,22 +33,22 @@ class DatasetVerificationPandas(DatasetVerification):
         #
         # print(df1[0])
 
-    def verify_csv(self, file: str):
+    def verify_csv(self, file: str) -> (list, list, dict, list, list, str, list, list, list, pd.DataFrame):
         xl = pd.read_csv(file)
         pass
 
-    def _verify(self, df: pd.DataFrame):
+    def _verify(self, df: pd.DataFrame) -> (list, list, dict, list, list, str, list, list, list, pd.DataFrame):
         legend_values: list = df[df.columns.values[0]].values
         headers: list = df.columns.values
         legend_error_protocol, legend_info_protocol, legend_inc = self._parse_legend_values(legend_values)
         headers_error_protocol, legend_header, data_headers = self._parse_headers(headers,
                                                                                   len(df[df.columns.values[1:]].T))
-        values_error_protocol, legend_info_protocol, df = self._parse_values(df)
-        print(df[df.columns.values[1]])
-        return legend_error_protocol, legend_info_protocol, legend_inc, headers_error_protocol, legend_header, \
-               data_headers, values_error_protocol, legend_info_protocol, df[df.columns.values[1:]]
+        values_error_protocol, values_info_protocol, df = self._parse_values(df)
 
-    def _parse_legend_values(self, legend_values: list) -> (dict, dict, dict):
+        return legend_error_protocol, legend_info_protocol, legend_inc, legend_values.tolist(), headers_error_protocol, legend_header, \
+               data_headers, values_error_protocol, values_info_protocol,df[df.columns.values[1:]]
+
+    def _parse_legend_values(self, legend_values: list) -> (list, list, dict):
         legend_inc = {'increment': 0, 'type': None}
         has_error = False
         error_protocol = []
@@ -98,7 +98,7 @@ class DatasetVerificationPandas(DatasetVerification):
             if pd.isnull(legend_values[i]):
                 error_protocol.append({'position': i + 1, 'message': self._ERROR_VALUES_IS_NOT_INCREMENTAL})
 
-        legend_inc = {'increment': inc, 'type': type(legend_values[0])}
+        legend_inc = {'increment': inc, 'type': str(type(legend_values[0]))}
 
         return error_protocol, info_protocol, legend_inc
 
@@ -109,7 +109,7 @@ class DatasetVerificationPandas(DatasetVerification):
         if len(headers[1:]) != data_size:
             error_protocol.append({'error': self._ERROR_MISMATCH_NUMBER_OF_HEADERS_AND_NUMBER_OF_DATA})
 
-        return error_protocol, headers[0], headers[1:]
+        return error_protocol, headers[0], headers[1:].tolist()
 
     def _parse_values(self, df: pd.DataFrame) -> (dict, dict, pd.DataFrame):
         error_protocol = []
