@@ -29,7 +29,14 @@ class RabbitMQConfig:
             "queue": global_config['rabbitmq']['output']['verificationResult']['queueName'],
             "routingKey": global_config['rabbitmq']['output']['verificationResult']['routingKey']
         }
-        
+
+        self._OUTPUT_NORMALIZATION_RESULT = {
+            "exchange": global_config['rabbitmq']['output']['normalizationResult']['exchange'],
+            "queue": global_config['rabbitmq']['output']['normalizationResult']['queueName'],
+            "routingKey": global_config['rabbitmq']['output']['normalizationResult']['routingKey']
+        }
+
+
 
         self._HOST = global_config['rabbitmq']['host'] if global_config['rabbitmq']['host'] else _HOST
         self._PORT = global_config['rabbitmq']['port'] if global_config['rabbitmq']['port'] else _PORT
@@ -59,4 +66,9 @@ class RabbitMQConfig:
     @property
     def OUTPUT_VERIFICATION_RESULT_CONFIG(self):
         return self._OUTPUT_VERIFICATION_RESULT
+
+    @property
+    def OUTPUT_NORMALIZATION_RESULT_CONFIG(self):
+        return self._OUTPUT_NORMALIZATION_RESULT
+
 

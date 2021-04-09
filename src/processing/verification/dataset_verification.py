@@ -6,7 +6,7 @@ class DatasetVerification(object):
 
     @abstractmethod
     def verify_excel(file: str) -> (list, list, dict, list, list, str, list, list, list, pd.DataFrame):
-        """verify excel dataset format"""
+        """verify processing dataset format"""
 
     @abstractmethod
     def verify_csv(file: str) -> (list, list, dict, list, list, str, list, list, list, pd.DataFrame):

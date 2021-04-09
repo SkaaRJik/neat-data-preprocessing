@@ -1,4 +1,13 @@
 {
   "projectId": 1,
+  "username": "victor",
   "fileName": "data.xlsx"
 }
+
+  {
+    "projectId": 1,
+    "normalizationMethod": "minMax",
+    "log": true,
+    "username": "victor",
+    "fileName": "/victor/verified/data.csv"
+  }

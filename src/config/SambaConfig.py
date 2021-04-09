@@ -10,6 +10,7 @@ class SambaConfig:
         _USERNAME = "guest"
         _PASSWORD = "guest"
         _NETBIOS_NAME = "name"
+        _MY_NETBIOS_NAME = "name"
         _WORKGROUP = "WORKGROUP"
         
 
@@ -17,7 +18,8 @@ class SambaConfig:
         self._SHARED_DIRECTORY = global_config['samba']['shared_directory'] if global_config['samba']['shared_directory'] else _SHARED_DIRECTORY
         self._USERNAME = global_config['samba']['username'] if global_config['samba']['username'] else _USERNAME
         self._PASSWORD = global_config['samba']['password'] if global_config['samba']['password'] else _PASSWORD
-        self._NETBIOS_NAME = global_config['samba']['netbios_name'] if global_config['samba']['netbios_name'] else _NETBIOS_NAME
+        self._SHARED_NETBIOS_NAME = global_config['samba']['shared_netbios_name'] if global_config['samba']['shared_netbios_name'] else _NETBIOS_NAME
+        self._MY_NETBIOS_NAME = global_config['samba']['my_netbios_name'] if global_config['samba']['my_netbios_name'] else _MY_NETBIOS_NAME
         self._WORKGROUP = global_config['samba']['workgroup'] if global_config['samba']['workgroup'] else _WORKGROUP
 
     
@@ -43,4 +45,4 @@ class SambaConfig:
 
     @property
     def NETBIOS_NAME(self):
-        return self._NETBIOS_NAME
+        return self._SHARED_NETBIOS_NAME

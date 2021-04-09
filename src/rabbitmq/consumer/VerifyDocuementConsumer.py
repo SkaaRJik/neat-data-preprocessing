@@ -1,11 +1,14 @@
 import json
 import logging.config
+import os
 
+import smb
+from pandas import DataFrame
 from pika.exchange_type import ExchangeType
 
 from src.config.RabbitMQConfig import RabbitMQConfig
-from src.excel.verification.dataset_verification import DatasetVerification
-from src.excel.verification.dataset_verification_pandas import DatasetVerificationPandas
+from src.processing.verification.dataset_verification import DatasetVerification
+from src.processing.verification.dataset_verification_pandas import DatasetVerificationPandas
 from src.rabbitmq.consumer.Consumer import Consumer
 from src.samba.SambaWorker import SambaWorker
 
@@ -22,7 +25,7 @@ class VerifyDocumentConsumer(Consumer):
         self._samba_worker = samba_worker
         super().__init__(rabbit_mq_config, queue, routing_key, exchange, exchange_type)
 
-    def on_message(self, _unused_channel, basic_deliver, properties, body) -> (list, list, any, list, str,):
+    def on_message(self, _unused_channel, basic_deliver, properties, body):
         """Invoked by pika when a message is delivered from RabbitMQ. The
         channel is passed for your convenience. The basic_deliver object that
         is passed in carries the exchange, routing key, delivery tag and
@@ -41,37 +44,61 @@ class VerifyDocumentConsumer(Consumer):
 
         project_id = decoded_body.get("projectId")
         file_name: str = decoded_body.get("fileName")
-        file = self._samba_worker.download(file_name)
-        legend_error_protocol, legend_info_protocol, legend_inc, legend_values, headers_error_protocol, legend_header, \
-        data_headers, values_error_protocol, values_info_protocol, dataframe_to_save = self._dataset_verification.verify_excel(
-            file)
-        file.close()
+        username: str = decoded_body.get("username")
 
-        index_to_delete = file_name.rfind('.')
+        only_filename_without_extension = self.eject_filename(file_name)
 
-        if index_to_delete >= 0:
-            file_name = '{0}.csv'.format(file_name[:index_to_delete])
+        try:
+            dataframe_to_save: DataFrame = None
+            file = self._samba_worker.download(file_name, '{0}-{1}'.format(username, only_filename_without_extension))
+            legend_error_protocol, legend_info_protocol, legend_inc, legend_values, headers_error_protocol, legend_header, \
+            data_headers, values_error_protocol, values_info_protocol, dataframe_to_save = self._dataset_verification.verify_excel(
+                file)
+            file.close()
+            os.remove(file.name)
 
-        file = open('/tmp/{0}'.format(file_name), "wb")
-        dataframe_to_save.to_csv(file, index=None, header=True, sep=";")
-        self._samba_worker.upload(path_to_save='{0}'.format(file_name), file=file.name)
-        file.close()
+            temp_filename = '/tmp/{0}-{1}.csv'.format(username, only_filename_without_extension)
+            path_to_save = '/{0}/verified/{1}.csv'.format(username, only_filename_without_extension)
+            dataframe_to_save.to_csv(temp_filename, sep=';', index=False)
 
-        verification_protocol = {
-            "projectId": project_id,
-            "errors": self.pack_error_protocols(legend_error_protocol=legend_error_protocol,
-                                                 headers_error_protocol=headers_error_protocol,
-                                                 values_error_protocol=values_error_protocol),
-            "info": self.pack_info_protocols(legend_info_protocol=legend_info_protocol,
-                                              values_info_protocol=values_info_protocol),
-            "verifiedFile": '/tmp/{0}'.format(file_name),
-            "legend": {
-                "header": legend_header,
-                "data": legend_values,
-                "increment": legend_inc
-            },
-            "headers": data_headers,
-        }
+
+            self._samba_worker.upload(path_to_save=path_to_save, file=temp_filename)
+
+
+            file.close()
+            errors = self.pack_error_protocols(legend_error_protocol=legend_error_protocol,
+                                      headers_error_protocol=headers_error_protocol,
+                                      values_error_protocol=values_error_protocol)
+
+            verification_protocol = {
+                "projectId": project_id,
+                "errors": errors,
+                "info": self.pack_info_protocols(legend_info_protocol=legend_info_protocol,
+                                                 values_info_protocol=values_info_protocol),
+                "verifiedFile": path_to_save,
+                "legend": {
+                    "header": legend_header,
+                    "data": legend_values,
+                    "increment": legend_inc
+                },
+                "logIsAllowed": True if dataframe_to_save.values.min() > 0 else False,
+                "headers": data_headers,
+                "status": 'Verified' if errors is not None else 'Verification_Error'
+            }
+
+        except BaseException as ex:
+            LOGGER.error('verification: username - {0}, filename - {1}'.format(username, file_name))
+            LOGGER.exception(ex)
+            verification_protocol = {
+                "projectId": project_id,
+                "errors": None,
+                "info": None,
+                "verifiedFile": None,
+                "legend": None,
+                "logIsAllowed": False,
+                "headers": None,
+                "status": 'Service_Error'
+            }
 
         encoded_body = json.dumps(verification_protocol)
 
@@ -80,18 +107,6 @@ class VerifyDocumentConsumer(Consumer):
         self._rabbit_mq_writer.writeMessage(exchange=queue_config.get("exchange"),
                                             routing_key=queue_config.get("routingKey"),
                                             message=encoded_body)
-
-        # self._dataset_verification.verify_excel(file_name)
-        # legend_error_protocol, legend_info_protocol, legend_inc, headers_error_protocol, legend_header, \
-        # data_headers, values_error_protocol, legend_info_protocol, dataframe_to_save = dataset_verification.verify_excel(file_date_empty)
-
-        # encoded_body = json.dumps(decoded_body)
-        #
-        # queueConfig = self._rabbit_mq_config.OUTPUT_VERIFICATION_RESULT_CONFIG
-        #
-        # self._rabbit_mq_writer.writeMessage(exchange=queueConfig.get("exchange"),
-        #                                     routing_key=queueConfig.get("routingKey"),
-        #                                     message=encoded_body)
 
         self.acknowledge_message(basic_deliver.delivery_tag)
 

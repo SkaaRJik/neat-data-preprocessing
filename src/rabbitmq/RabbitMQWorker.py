@@ -3,7 +3,7 @@ import logging.config
 import time
 from pika.exchange_type import ExchangeType
 import pika
-
+from multiprocessing import Process
 from src.config.RabbitMQConfig import RabbitMQConfig
 from src.rabbitmq.MessageWriter import MessageWriter
 from src.rabbitmq.consumer.Consumer import Consumer
@@ -28,7 +28,7 @@ class RabbitMQWorker:
         self._chan = self._conn.channel()
 
         self._registrateExchangesAndTopics(rabbit_mq_config)
-
+        self._process_list = []
 
 
         # If publish causes the connection to become blocked, then this conn.close()
@@ -38,17 +38,28 @@ class RabbitMQWorker:
         # on_connection_closed callback call in an asynchronous adapter)
         self._conn.close()
 
-    def run(self):
+    def run_consumer(self, consumer):
         while True:
             try:
-                for consumer in self._consumers:
-                    consumer.run()
+                consumer.run()
             except KeyboardInterrupt:
-                for consumer in self._consumers:
-                    consumer.stop()
-                    self._rabbit_mq_writer.closeConnection()
+                consumer.stop()
                 break
-            self._maybe_reconnect()
+            self._maybe_reconnect(consumer)
+
+    def run(self):
+
+        for consumer in self._consumers:
+            process = Process(target=self.run_consumer, args=(consumer,))
+            self._process_list.append(process)
+            process.start()
+
+
+        # wait for all process to finish
+        for process in self._process_list:
+            process.join()
+
+        self._rabbit_mq_writer.closeConnection()
 
 
     def add_consumer(self, consumer: Consumer):
@@ -56,14 +67,13 @@ class RabbitMQWorker:
         consumer.set_writer(self._rabbit_mq_writer)
         self._consumers.append(consumer)
 
-    def _maybe_reconnect(self):
-        for consumer in self._consumers:
-            if consumer.should_reconnect:
-                consumer.stop()
-                reconnect_delay = self._get_reconnect_delay(consumer)
-                LOGGER.info('Reconnecting after %d seconds', reconnect_delay)
-                time.sleep(reconnect_delay)
-                consumer.reset()
+    def _maybe_reconnect(self, consumer):
+        if consumer.should_reconnect:
+            consumer.stop()
+            reconnect_delay = self._get_reconnect_delay(consumer)
+            LOGGER.info('Reconnecting after %d seconds', reconnect_delay)
+            time.sleep(reconnect_delay)
+            consumer.reset()
 
     def _get_reconnect_delay(self, consumer):
         if consumer.was_consuming:
@@ -101,7 +111,10 @@ class RabbitMQWorker:
     #     self.stop()
     #     self._connection.close()
     def _registrateExchangesAndTopics(self, rabbit_mq_config: RabbitMQConfig):
-        topics_configs = [rabbit_mq_config.OUTPUT_VERIFICATION_RESULT_CONFIG]
+        topics_configs = [
+            rabbit_mq_config.OUTPUT_VERIFICATION_RESULT_CONFIG,
+            rabbit_mq_config.OUTPUT_NORMALIZATION_RESULT_CONFIG
+        ]
 
         for config in topics_configs:
             self._chan.exchange_declare(exchange=config.get("exchange"), exchange_type=ExchangeType.direct, durable=True)

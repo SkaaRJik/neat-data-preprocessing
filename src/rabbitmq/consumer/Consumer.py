@@ -23,6 +23,9 @@ class Consumer(object):
 
     __metaclass__ = ABCMeta
 
+
+
+
     def __init__(self, rabbit_mq_config: RabbitMQConfig, queue: str, routing_key: str,
                  exchange: str = "", exchange_type: ExchangeType = ExchangeType.direct):
 
@@ -81,7 +84,7 @@ class Consumer(object):
         :rtype: pika.SelectConnection
         """
 
-        LOGGER.info('Connecting to %s', self._connection_parameters)
+        LOGGER.info('Connecting to {0}, exchange: {1}, exchange: {2}, exchange: {3}'.format(self._connection_parameters, self.EXCHANGE, self.QUEUE, self.ROUTING_KEY))
         return pika.SelectConnection(
             parameters=self._connection_parameters,
             on_open_callback=self.on_connection_open,
@@ -358,3 +361,16 @@ class Consumer(object):
 
     def set_writer(self, rabbit_mq_writer: MessageWriter):
         self._rabbit_mq_writer = rabbit_mq_writer
+
+    def eject_filename(self, filename: str) -> str:
+        index_to_delete = filename.rfind('/')
+        clean_file_name = filename
+        if index_to_delete >= 0:
+            clean_file_name = filename[index_to_delete+1:]
+
+        index_to_delete = clean_file_name.rfind('.')
+
+        if index_to_delete >= 0:
+            clean_file_name = clean_file_name[:index_to_delete]
+
+        return clean_file_name

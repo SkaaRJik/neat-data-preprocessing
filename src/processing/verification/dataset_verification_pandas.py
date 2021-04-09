@@ -3,7 +3,7 @@ import pandas as pd
 from pandas import ExcelFile, DataFrame
 from sklearn.impute import SimpleImputer
 
-from src.excel.verification.dataset_verification import DatasetVerification
+from src.processing.verification.dataset_verification import DatasetVerification
 
 
 class DatasetVerificationPandas(DatasetVerification):
