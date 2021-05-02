@@ -192,6 +192,7 @@ class Consumer(object):
         self._channel.exchange_declare(
             exchange=exchange_name,
             exchange_type=self.EXCHANGE_TYPE,
+            durable=True,
             callback=cb)
 
     def on_exchange_declareok(self, _unused_frame, userdata):
@@ -211,7 +212,7 @@ class Consumer(object):
         """
         LOGGER.info('Declaring queue %s', queue_name)
         cb = functools.partial(self.on_queue_declareok, userdata=queue_name)
-        self._channel.queue_declare(queue=queue_name, callback=cb)
+        self._channel.queue_declare(queue=queue_name, durable=True, callback=cb)
 
     def on_queue_declareok(self, _unused_frame, userdata):
         """Method invoked by pika when the Queue.Declare RPC call made in

@@ -20,7 +20,7 @@ class VerifyDocumentConsumer(Consumer):
 
     def __init__(self, rabbit_mq_config: RabbitMQConfig, queue: str, routing_key: str,
                  samba_worker: SambaWorker,
-                 exchange: str = "", exchange_type: ExchangeType = ExchangeType.topic):
+                 exchange: str = "", exchange_type: ExchangeType = ExchangeType.direct):
         self._dataset_verification: DatasetVerification = DatasetVerificationPandas()
         self._samba_worker = samba_worker
         super().__init__(rabbit_mq_config, queue, routing_key, exchange, exchange_type)
@@ -43,6 +43,7 @@ class VerifyDocumentConsumer(Consumer):
         decoded_body: dict = json.loads(body)
 
         project_id = decoded_body.get("projectId")
+        projectName = decoded_body.get("projectName")
         file_name: str = decoded_body.get("fileName")
         username: str = decoded_body.get("username")
 
@@ -50,22 +51,21 @@ class VerifyDocumentConsumer(Consumer):
 
         try:
             dataframe_to_save: DataFrame = None
-            file = self._samba_worker.download(file_name, '{0}-{1}'.format(username, only_filename_without_extension))
+            file = self._samba_worker.download(file_name, 'ver-{0}-{1}'.format(username, only_filename_without_extension))
             legend_error_protocol, legend_info_protocol, legend_inc, legend_values, headers_error_protocol, legend_header, \
             data_headers, values_error_protocol, values_info_protocol, dataframe_to_save = self._dataset_verification.verify_excel(
                 file)
             file.close()
             os.remove(file.name)
 
-            temp_filename = '/tmp/{0}-{1}.csv'.format(username, only_filename_without_extension)
-            path_to_save = '/{0}/verified/{1}.csv'.format(username, only_filename_without_extension)
+            temp_filename = '/tmp/{0}.csv'.format(project_id)
+            path_to_save = f'/{username}/{projectName}/ver-{only_filename_without_extension}.csv'
             dataframe_to_save.to_csv(temp_filename, sep=';', index=False)
 
 
             self._samba_worker.upload(path_to_save=path_to_save, file=temp_filename)
 
-
-            file.close()
+            os.remove(temp_filename)
             errors = self.pack_error_protocols(legend_error_protocol=legend_error_protocol,
                                       headers_error_protocol=headers_error_protocol,
                                       values_error_protocol=values_error_protocol)
@@ -83,7 +83,7 @@ class VerifyDocumentConsumer(Consumer):
                 },
                 "logIsAllowed": True if dataframe_to_save.values.min() > 0 else False,
                 "headers": data_headers,
-                "status": 'Verified' if errors is not None else 'Verification_Error'
+                "status": 'VERIFIED' if errors is None else 'VERIFICATION_ERROR'
             }
 
         except BaseException as ex:
@@ -97,7 +97,7 @@ class VerifyDocumentConsumer(Consumer):
                 "legend": None,
                 "logIsAllowed": False,
                 "headers": None,
-                "status": 'Service_Error'
+                "status": 'VERIFICATION_SERVICE_ERROR'
             }
 
         encoded_body = json.dumps(verification_protocol)

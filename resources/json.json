@@ -6,7 +6,7 @@
 
   {
     "projectId": 1,
-    "normalizationMethod": "minMax",
+    "normalizationMethod": "standard",
     "log": true,
     "username": "victor",
     "fileName": "/victor/verified/data.csv"

@@ -1,5 +1,6 @@
 import json
 import logging.config
+import os
 from decimal import Decimal
 
 from numpy import ndarray
@@ -21,7 +22,7 @@ class NormalizationDataConsumer(Consumer):
 
     def __init__(self, rabbit_mq_config: RabbitMQConfig, queue: str, routing_key: str,
                  samba_worker: SambaWorker,
-                 exchange: str = "", exchange_type: ExchangeType = ExchangeType.topic):
+                 exchange: str = "", exchange_type: ExchangeType = ExchangeType.direct):
         self._samba_worker = samba_worker
         super().__init__(rabbit_mq_config, queue, routing_key, exchange, exchange_type)
 
@@ -42,7 +43,8 @@ class NormalizationDataConsumer(Consumer):
                     basic_deliver.delivery_tag, properties.app_id, body)
         decoded_body: dict = json.loads(body)
 
-        project_id = decoded_body.get("projectId")
+        experiment_id = decoded_body.get("experimentId")
+        project_name = decoded_body.get("projectName")
         file_name: str = decoded_body.get("fileName")
         normalization_name: str = decoded_body.get("normalizationMethod")
         username: str = decoded_body.get("username")
@@ -55,7 +57,7 @@ class NormalizationDataConsumer(Consumer):
 
 
         try:
-            temp = '{0}-{1}.csv'.format(username, only_filename_without_extension)
+            temp = 'norm-{0}-{1}.csv'.format(experiment_id, only_filename_without_extension)
             file = self._samba_worker.download(file_name, temp)
             data_normalizer: DatasetNormalizer = dataset_normalizer_factory.getNormalizer(normalization_name)
 
@@ -64,31 +66,29 @@ class NormalizationDataConsumer(Consumer):
             file.close()
             dataframe_to_save: DataFrame = data_normalizer.normalize(file.name, log_data)
 
-
-            index_from_delete = file_name.rfind('/')
-
-
-
-            path_to_save = '/{0}/normalized/{1}.csv'.format(username, only_filename_without_extension)
-            temp_name = '/tmp/normalized-{0}-{1}.csv'.format(username,only_filename_without_extension)
+            path_to_save = f'/{username}/{project_name}/norm-{experiment_id}.csv'
+            temp_name = f'/tmp/norm-{username}-{experiment_id}.csv'
+            file.close()
             dataframe_to_save.to_csv(temp_name, index=None, header=True, sep=";")
+
             self._samba_worker.upload(path_to_save=path_to_save, file=temp_name)
 
+            os.remove(temp_name)
 
             normalization_protocol = {
-                "projectId": project_id,
+                "experimentId": experiment_id,
                 "normalizedDatasetFilename": path_to_save,
                 "statistic": self._calculate_spreading_statistic(dataframe_to_save.values, 10),
-                "status": "Normalized"
+                "status": "NORMALIZED"
             }
         except BaseException as ex:
             LOGGER.error('normalization: normalizedDatasetFilename - {0}'.format(file_name))
             LOGGER.exception(ex)
             normalization_protocol = {
-                "projectId": project_id,
+                "experimentId": experiment_id,
                 "normalizedDatasetFilename": None,
-                "statistic": None,
-                "status": "Service_Error"
+                "normalizationStatistic": None,
+                "status": "NORMALIZATION_SERVICE_ERROR"
             }
 
         encoded_body = json.dumps(normalization_protocol)
@@ -98,9 +98,6 @@ class NormalizationDataConsumer(Consumer):
         self._rabbit_mq_writer.writeMessage(exchange=queue_config.get("exchange"),
                                             routing_key=queue_config.get("routingKey"),
                                             message=encoded_body)
-
-
-
 
         self.acknowledge_message(basic_deliver.delivery_tag)
 
