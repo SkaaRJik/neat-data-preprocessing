@@ -16,6 +16,3 @@ class DatasetNormalizerFactory(object):
             "standard": self._standardNormalizer
         }
         return switch.get(name)
-
-
-dataset_normalizer_factory = DatasetNormalizerFactory()

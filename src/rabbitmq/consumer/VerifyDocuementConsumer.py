@@ -43,15 +43,15 @@ class VerifyDocumentConsumer(Consumer):
         decoded_body: dict = json.loads(body)
 
         project_id = decoded_body.get("projectId")
-        projectName = decoded_body.get("projectName")
-        file_name: str = decoded_body.get("fileName")
+        project_folder = decoded_body.get("projectFolder")
+        file_path: str = decoded_body.get("filePath")
         username: str = decoded_body.get("username")
 
-        only_filename_without_extension = self.eject_filename(file_name)
+        only_filename_without_extension = self.eject_filename(file_path)
 
         try:
             dataframe_to_save: DataFrame = None
-            file = self._samba_worker.download(file_name, 'ver-{0}-{1}'.format(username, only_filename_without_extension))
+            file = self._samba_worker.download(file_path, 'ver-{0}-{1}'.format(username, only_filename_without_extension))
             legend_error_protocol, legend_info_protocol, legend_inc, legend_values, headers_error_protocol, legend_header, \
             data_headers, values_error_protocol, values_info_protocol, dataframe_to_save = self._dataset_verification.verify_excel(
                 file)
@@ -59,7 +59,7 @@ class VerifyDocumentConsumer(Consumer):
             os.remove(file.name)
 
             temp_filename = '/tmp/{0}.csv'.format(project_id)
-            path_to_save = f'/{username}/{projectName}/ver-{only_filename_without_extension}.csv'
+            path_to_save = f'{project_folder}/ver-{only_filename_without_extension}.csv'
             dataframe_to_save.to_csv(temp_filename, sep=';', index=False)
 
 
@@ -87,7 +87,7 @@ class VerifyDocumentConsumer(Consumer):
             }
 
         except BaseException as ex:
-            LOGGER.error('verification: username - {0}, filename - {1}'.format(username, file_name))
+            LOGGER.error('verification: username - {0}, filename - {1}'.format(username, file_path))
             LOGGER.exception(ex)
             verification_protocol = {
                 "projectId": project_id,

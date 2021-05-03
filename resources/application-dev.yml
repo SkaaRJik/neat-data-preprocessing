@@ -14,6 +14,10 @@ rabbitmq:
       exchange: data-preprocessing-service
       queueName: normalization-data
       routingKey: normalization-data
+    report:
+      exchange: data-preprocessing-service
+      queueName: report
+      routingKey: report
   output:
     verificationResult:
       exchange: user-queries-service
@@ -23,6 +27,10 @@ rabbitmq:
       exchange: user-queries-service
       queueName: normalization-result
       routingKey: normalization-result
+    reportResult:
+      exchange: user-queries-service
+      queueName: report-result
+      routingKey: report-result
 
 samba:
   host: localhost

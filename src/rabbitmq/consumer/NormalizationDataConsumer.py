@@ -10,7 +10,7 @@ from pika.exchange_type import ExchangeType
 from src.config.RabbitMQConfig import RabbitMQConfig
 from src.exceptions.WrongNormalizationMethodException import WrongNormalizationMethodException
 from src.processing.normalization.dataset_normalizer import DatasetNormalizer
-from src.processing.normalization.dataset_normalizer_factory import dataset_normalizer_factory
+from src.processing.normalization.dataset_normalizer_factory import DatasetNormalizerFactory
 from src.rabbitmq.consumer.Consumer import Consumer
 from src.samba.SambaWorker import SambaWorker
 
@@ -24,6 +24,7 @@ class NormalizationDataConsumer(Consumer):
                  samba_worker: SambaWorker,
                  exchange: str = "", exchange_type: ExchangeType = ExchangeType.direct):
         self._samba_worker = samba_worker
+        self._dataset_normalizer_factory = DatasetNormalizerFactory()
         super().__init__(rabbit_mq_config, queue, routing_key, exchange, exchange_type)
 
     def on_message(self, _unused_channel, basic_deliver, properties, body):
@@ -44,13 +45,13 @@ class NormalizationDataConsumer(Consumer):
         decoded_body: dict = json.loads(body)
 
         experiment_id = decoded_body.get("experimentId")
-        project_name = decoded_body.get("projectName")
-        file_name: str = decoded_body.get("fileName")
+        project_folder = decoded_body.get("projectFolder")
+        file_path: str = decoded_body.get("filePath")
         normalization_name: str = decoded_body.get("normalizationMethod")
         username: str = decoded_body.get("username")
         log_data: bool = decoded_body.get("log")
 
-        only_filename_without_extension = self.eject_filename(file_name)
+        only_filename_without_extension = self.eject_filename(file_path)
 
 
 
@@ -58,18 +59,18 @@ class NormalizationDataConsumer(Consumer):
 
         try:
             temp = 'norm-{0}-{1}.csv'.format(experiment_id, only_filename_without_extension)
-            file = self._samba_worker.download(file_name, temp)
-            data_normalizer: DatasetNormalizer = dataset_normalizer_factory.getNormalizer(normalization_name)
+            file = self._samba_worker.download(file_path, temp)
+            data_normalizer: DatasetNormalizer = self._dataset_normalizer_factory.getNormalizer(normalization_name)
 
             if data_normalizer is None:
                 raise WrongNormalizationMethodException('{0} - method not found'.format(normalization_name))
             file.close()
             dataframe_to_save: DataFrame = data_normalizer.normalize(file.name, log_data)
 
-            path_to_save = f'/{username}/{project_name}/norm-{experiment_id}.csv'
+            path_to_save = f'{project_folder}/norm-{experiment_id}.csv'
             temp_name = f'/tmp/norm-{username}-{experiment_id}.csv'
             file.close()
-            dataframe_to_save.to_csv(temp_name, index=None, header=True, sep=";")
+            dataframe_to_save.to_csv(temp_name, index=None, header=True, sep="\t")
 
             self._samba_worker.upload(path_to_save=path_to_save, file=temp_name)
 
@@ -82,7 +83,7 @@ class NormalizationDataConsumer(Consumer):
                 "status": "NORMALIZED"
             }
         except BaseException as ex:
-            LOGGER.error('normalization: normalizedDatasetFilename - {0}'.format(file_name))
+            LOGGER.error('normalization: normalizedDatasetFilename - {0}'.format(file_path))
             LOGGER.exception(ex)
             normalization_protocol = {
                 "experimentId": experiment_id,

@@ -24,6 +24,14 @@ class RabbitMQConfig:
             "routingKey": global_config['rabbitmq']['input']['normalizeData']['routingKey']
         }
 
+        self._INPUT_REPORT = {
+            "exchange": global_config['rabbitmq']['input']['report']['exchange'],
+            "queue": global_config['rabbitmq']['input']['report']['queueName'],
+            "routingKey": global_config['rabbitmq']['input']['report']['routingKey']
+        }
+
+
+
         self._OUTPUT_VERIFICATION_RESULT = {
             "exchange": global_config['rabbitmq']['output']['verificationResult']['exchange'],
             "queue": global_config['rabbitmq']['output']['verificationResult']['queueName'],
@@ -34,6 +42,12 @@ class RabbitMQConfig:
             "exchange": global_config['rabbitmq']['output']['normalizationResult']['exchange'],
             "queue": global_config['rabbitmq']['output']['normalizationResult']['queueName'],
             "routingKey": global_config['rabbitmq']['output']['normalizationResult']['routingKey']
+        }
+
+        self._OUTPUT_REPORT_RESULT = {
+            "exchange": global_config['rabbitmq']['output']['reportResult']['exchange'],
+            "queue": global_config['rabbitmq']['output']['reportResult']['queueName'],
+            "routingKey": global_config['rabbitmq']['output']['reportResult']['routingKey']
         }
 
 
@@ -64,11 +78,20 @@ class RabbitMQConfig:
         return self._INPUT_NORMALIZE_DATA
 
     @property
+    def INPUT_REPORT_CONFIG(self):
+        return self._INPUT_REPORT
+
+
+    @property
     def OUTPUT_VERIFICATION_RESULT_CONFIG(self):
         return self._OUTPUT_VERIFICATION_RESULT
 
     @property
     def OUTPUT_NORMALIZATION_RESULT_CONFIG(self):
         return self._OUTPUT_NORMALIZATION_RESULT
+
+    @property
+    def OUTPUT_REPORT_RESULT_CONFIG(self):
+        return self._OUTPUT_REPORT_RESULT
 
 

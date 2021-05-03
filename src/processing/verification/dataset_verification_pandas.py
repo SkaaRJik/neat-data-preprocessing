@@ -25,7 +25,7 @@ class DatasetVerificationPandas(DatasetVerification):
     def verify_excel(self, file) -> (list, list, dict, list, list, str, list, list, list, pd.DataFrame):
         xls: ExcelFile = pd.ExcelFile(file)
         df: DataFrame = xls.parse(0, parse_dates=False)
-
+        df.columns = df.columns.str.strip()
         return self._verify(df)
 
         # Load a sheet into a DataFrame by name: df1
