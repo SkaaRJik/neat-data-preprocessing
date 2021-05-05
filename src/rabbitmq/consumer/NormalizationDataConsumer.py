@@ -70,7 +70,7 @@ class NormalizationDataConsumer(Consumer):
             path_to_save = f'{project_folder}/norm-{experiment_id}.csv'
             temp_name = f'/tmp/norm-{username}-{experiment_id}.csv'
             file.close()
-            dataframe_to_save.to_csv(temp_name, index=None, header=True, sep="\t")
+            dataframe_to_save.to_csv(temp_name, index=None, header=True, sep=";")
 
             self._samba_worker.upload(path_to_save=path_to_save, file=temp_name)
 
