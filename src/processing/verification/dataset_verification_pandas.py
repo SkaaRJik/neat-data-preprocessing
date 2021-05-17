@@ -14,6 +14,9 @@ class DatasetVerificationPandas(DatasetVerification):
     _ERROR_VALUES_IS_NOT_INCREMENTAL = 'ERROR_VALUES_IS_NOT_INCREMENTAL'
     _ERROR_MISMATCH_NUMBER_OF_HEADERS_AND_NUMBER_OF_DATA = 'ERROR_MISMATCH_NUMBER_OF_HEADERS_AND_NUMBER_OF_DATA'
     _INFO_VALUE_WAS_PREDICTED = 'INFO_VALUE_WAS_PREDICTED'
+    _ERROR_COLUMN_NAME_IS_EMPTY = 'ERROR_COLUMN_NAME_IS_EMPTY'
+    _ERROR_LEGEND_COLUMN_NAME_IS_EMPTY = 'ERROR_LEGEND_COLUMN_NAME_IS_EMPTY'
+
 
     def __init__(self):
         pass
@@ -55,13 +58,19 @@ class DatasetVerificationPandas(DatasetVerification):
         info_protocol = []
 
         if len(legend_values) == 0:
-            error_protocol.append({'position': 0, 'message': self._ERROR_VALUES_IS_EMPTY})
+            error_protocol.append({'position': 0, 'error': self._ERROR_VALUES_IS_EMPTY})
             return error_protocol, info_protocol, legend_inc
 
         if has_error:
             return error_protocol, legend_inc
 
         legend_diff = 0
+
+        for i, legend_value in enumerate(legend_values):
+            if isinstance(legend_value, str):
+                error_protocol.append({'position': i+1, 'error': self._ERROR_VALUE_IS_STRING})
+                return error_protocol, info_protocol, legend_inc
+
 
         skip = 0
         for i in range(len(legend_values) - 1, 0, -1):
@@ -81,7 +90,7 @@ class DatasetVerificationPandas(DatasetVerification):
         inc = legend_diff / (len(legend_values) - 1 - skip)
 
         if inc == 0 or inc is None or pd.isnull(inc):
-            error_protocol.append({'position': 0, 'message': self._ERROR_LEGEND_INCREMENT_EQUALS_ZERO})
+            error_protocol.append({'position': 0, 'error': self._ERROR_LEGEND_INCREMENT_EQUALS_ZERO})
 
         for i in range(0, len(legend_values) - 1):
             if pd.isnull(legend_values[i]):
@@ -96,7 +105,7 @@ class DatasetVerificationPandas(DatasetVerification):
                         legend_values[i] = legend_values[i + 1] - inc
                         info_protocol.append({'position': i + 1, 'message': self._INFO_VALUE_WAS_PREDICTED})
             if pd.isnull(legend_values[i]):
-                error_protocol.append({'position': i + 1, 'message': self._ERROR_VALUES_IS_NOT_INCREMENTAL})
+                error_protocol.append({'position': i + 1, 'error': self._ERROR_VALUES_IS_NOT_INCREMENTAL})
 
         legend_inc = {'increment': inc, 'type': str(type(legend_values[0]))}
 
@@ -105,6 +114,17 @@ class DatasetVerificationPandas(DatasetVerification):
     def _parse_headers(self, headers: list, data_size: int) -> (dict, str, list):
 
         error_protocol = []
+        header: str
+        for header in headers[1:]:
+            if 'Unnamed' in header:
+                error_protocol.append({'error': self._ERROR_COLUMN_NAME_IS_EMPTY})
+                break
+
+
+        if 'Unnamed' in headers[0]:
+            error_protocol.append({'error': self._ERROR_LEGEND_COLUMN_NAME_IS_EMPTY})
+
+
 
         if len(headers[1:]) != data_size:
             error_protocol.append({'error': self._ERROR_MISMATCH_NUMBER_OF_HEADERS_AND_NUMBER_OF_DATA})

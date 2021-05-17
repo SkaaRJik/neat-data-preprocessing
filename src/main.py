@@ -142,7 +142,7 @@ def main():
 
     # dataset_verification = DatasetVerificationPandas()
     # correct_file = '../resources/data.xlsx'
-    # # # file_date_empty = '../resources/data1.xlsx'
+    # # # file_date_empty = '../resources/dataError.xlsx'
     # # file_number_empty = '../resources/data2.xlsx'
     #
     # # dataset_verification.verify_excel(correct_file)

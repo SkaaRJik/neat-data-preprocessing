@@ -2,7 +2,6 @@ import json
 import logging.config
 import os
 
-import smb
 from pandas import DataFrame
 from pika.exchange_type import ExchangeType
 
@@ -81,7 +80,7 @@ class VerifyDocumentConsumer(Consumer):
                     "data": legend_values,
                     "increment": legend_inc
                 },
-                "logIsAllowed": True if dataframe_to_save.values.min() > 0 else False,
+                "logIsAllowed": None if errors is not None else (True if dataframe_to_save.values.min() > 0 else False),
                 "headers": data_headers,
                 "status": 'VERIFIED' if errors is None else 'VERIFICATION_ERROR'
             }
@@ -100,7 +99,7 @@ class VerifyDocumentConsumer(Consumer):
                 "status": 'VERIFICATION_SERVICE_ERROR'
             }
 
-        encoded_body = json.dumps(verification_protocol)
+        encoded_body = json.dumps(verification_protocol, default=self.np_encoder)
 
         queue_config = self._rabbit_mq_config.OUTPUT_VERIFICATION_RESULT_CONFIG
 
@@ -109,6 +108,8 @@ class VerifyDocumentConsumer(Consumer):
                                             message=encoded_body)
 
         self.acknowledge_message(basic_deliver.delivery_tag)
+
+
 
     @staticmethod
     def pack_error_protocols(legend_error_protocol, headers_error_protocol, values_error_protocol) -> dict:
@@ -135,3 +136,4 @@ class VerifyDocumentConsumer(Consumer):
                 "legend_info": legend_info_protocol,
                 "values_info": values_info_protocol,
             }
+

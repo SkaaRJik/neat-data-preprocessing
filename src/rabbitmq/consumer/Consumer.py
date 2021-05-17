@@ -3,7 +3,7 @@ import functools
 import pika
 from pika.exchange_type import ExchangeType
 import logging.config
-
+import numpy as np
 from src.config.RabbitMQConfig import RabbitMQConfig
 from src.rabbitmq.MessageWriter import MessageWriter
 
@@ -375,3 +375,7 @@ class Consumer(object):
             clean_file_name = clean_file_name[:index_to_delete]
 
         return clean_file_name
+
+    def np_encoder(self, object):
+        if isinstance(object, (np.generic, np.ndarray)):
+            return object.item()
