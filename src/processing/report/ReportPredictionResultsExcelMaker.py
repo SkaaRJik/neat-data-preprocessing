@@ -391,7 +391,7 @@ class ReportPredictionResultsExcelMaker(object):
                                          vector=new_legend_data)
             self._write_vector_as_column(row_to_paste=6, column_to_paste=i * column_offset + 2, sheet=sheet,
                                          vector=source_data_frame[column_name].values)
-            predict_end_row = self._write_vector_as_column(row_to_paste=9, column_to_paste=i * column_offset + 3,
+            predict_end_row = self._write_vector_as_column(row_to_paste=6, column_to_paste=i * column_offset + 3,
                                                            sheet=sheet,
                                                            vector=prediction_data_frame[column_name].values)
             self._create_chart_for_factor_and_predicted_values(sheet=sheet,

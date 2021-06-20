@@ -44,6 +44,7 @@ class SambaWorker(object):
                 LOGGER.error("samba is not connected, try to reconnect!")
                 self.connect()
                 self.server.createDirectory(self.shared_name, directories[i])
+                LOGGER.info("samba is connected!")
         try:
             file_obj = open(file, 'rb')
             self.server.storeFile(self.shared_name, path_to_save, file_obj)
@@ -51,6 +52,7 @@ class SambaWorker(object):
             LOGGER.error("samba is not connected, try to reconnect!")
             self.connect()
             self.server.storeFile(self.shared_name, path_to_save, file_obj)
+            LOGGER.info("samba is connected!")
         except BaseException as ex:
             LOGGER.exception(ex)
             raise ex
@@ -66,10 +68,11 @@ class SambaWorker(object):
             LOGGER.error("samba is not connected, try to reconnect!")
             self.connect()
             self.server.retrieveFile(self.shared_name, shared_file_path, file_obj)
+            LOGGER.info("samba is connected!")
         except BaseException as ex:
             LOGGER.exception(ex)
             raise ex
-
+        file_obj.close()
         return file_obj
 
     def delete(self, file):

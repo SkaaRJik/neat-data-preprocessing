@@ -352,12 +352,17 @@ class Consumer(object):
         """
         if not self._closing:
             self._closing = True
-            LOGGER.info('Stopping')
+            LOGGER.info(f'Stopping: {type(self)}')
             if self._consuming:
                 self.stop_consuming()
                 self._connection.ioloop.start()
             else:
-                self._connection.ioloop.stop()
+                try:
+                    self._connection.ioloop.stop()
+                except AttributeError as e:
+                    LOGGER.error(f'ERROR: {type(self)}')
+                    LOGGER.error(e)
+
             LOGGER.info('Stopped')
 
     def set_writer(self, rabbit_mq_writer: MessageWriter):

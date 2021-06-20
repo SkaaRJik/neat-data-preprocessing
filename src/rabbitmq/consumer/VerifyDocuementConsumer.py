@@ -52,7 +52,7 @@ class VerifyDocumentConsumer(Consumer):
             dataframe_to_save: DataFrame = None
             file = self._samba_worker.download(file_path, 'ver-{0}-{1}'.format(username, only_filename_without_extension))
             legend_error_protocol, legend_info_protocol, legend_inc, legend_values, headers_error_protocol, legend_header, \
-            data_headers, values_error_protocol, values_info_protocol, dataframe_to_save = self._dataset_verification.verify_excel(
+            data_headers, values_error_protocol, values_info_protocol, rows, dataframe_to_save = self._dataset_verification.verify_excel(
                 file)
             file.close()
             os.remove(file.name)
@@ -80,6 +80,7 @@ class VerifyDocumentConsumer(Consumer):
                     "data": legend_values,
                     "increment": legend_inc
                 },
+                "rows": rows,
                 "logIsAllowed": None if errors is not None else (True if dataframe_to_save.values.min() > 0 else False),
                 "headers": data_headers,
                 "status": 'VERIFIED' if errors is None else 'VERIFICATION_ERROR'
@@ -96,6 +97,7 @@ class VerifyDocumentConsumer(Consumer):
                 "legend": None,
                 "logIsAllowed": False,
                 "headers": None,
+                "rows": None,
                 "status": 'VERIFICATION_SERVICE_ERROR'
             }
 

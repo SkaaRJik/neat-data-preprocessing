@@ -86,15 +86,13 @@ class ReportResultConsumer(Consumer):
 
 
         try:
-            pass
-
             temp = f'source-{project_id}-{experiment_id}.csv'
             source_file = self._samba_worker.download(source_file_path, temp)
             temp = f'results-{project_id}-{experiment_id}.csv'
             result_file = self._samba_worker.download(prediction_result_file_path, temp)
 
 
-            report_file, predicted_results = self._reportMaker.makeExcelReport(source_file.name,
+            report_filename, prediction_result = self._reportMaker.makeExcelReport(source_file.name,
                                         result_file.name,
                                         train_errors,
                                         test_errors,
@@ -112,7 +110,7 @@ class ReportResultConsumer(Consumer):
                                         normalization_statistic
                                         )
             path_to_save = f'{project_folder}/report-{experiment_id}.xlsx'
-            self._samba_worker.upload(path_to_save=path_to_save, file=report_file)
+            self._samba_worker.upload(path_to_save=path_to_save, file=report_filename)
 
             report_response = {
                 'experimentId': experiment_id,
@@ -120,48 +118,17 @@ class ReportResultConsumer(Consumer):
                 'projectId': project_id,
                 'status': 'DONE',
                 'predictionReportFile': path_to_save,
-                'predictionResult': predicted_results,
+                'predictionResult': prediction_result,
             }
-
+        except BaseException as ex:
+            LOGGER.error('reportConsumer: on_message - {0}'.format(body))
+            LOGGER.exception(ex)
+        finally:
             result_file.close()
             source_file.close()
             os.remove(result_file.name)
             os.remove(source_file.name)
-            os.remove(report_file)
-
-            # temp = 'norm-{0}-{1}.csv'.format(experiment_id, only_filename_without_extension)
-            # file = self._samba_worker.download(file_path, temp)
-            # data_normalizer: DatasetNormalizer = dataset_normalizer_factory.getNormalizer(normalization_name)
-            #
-            # if data_normalizer is None:
-            #     raise WrongNormalizationMethodException('{0} - method not found'.format(normalization_name))
-            # file.close()
-            # dataframe_to_save: DataFrame = data_normalizer.normalize(file.name, log_data)
-            #
-            # path_to_save = f'{project_folder}/norm-{experiment_id}.csv'
-            # temp_name = f'/tmp/norm-{username}-{experiment_id}.csv'
-            # file.close()
-            # dataframe_to_save.to_csv(temp_name, index=None, header=True, sep=";")
-            #
-            # self._samba_worker.upload(path_to_save=path_to_save, file=temp_name)
-            #
-            # os.remove(temp_name)
-            #
-            # normalization_protocol = {
-            #     "experimentId": experiment_id,
-            #     "normalizedDatasetFilename": path_to_save,
-            #     "statistic": self._calculate_spreading_statistic(dataframe_to_save.values, 10),
-            #     "status": "NORMALIZED"
-            # }
-        except BaseException as ex:
-            LOGGER.error('reportConsumer: on_message - {0}'.format(body))
-            LOGGER.exception(ex)
-            # normalization_protocol = {
-            #     "experimentId": experiment_id,
-            #     "normalizedDatasetFilename": None,
-            #     "normalizationStatistic": None,
-            #     "status": "NORMALIZATION_SERVICE_ERROR"
-            # }
+            os.remove(report_filename)
 
         encoded_body = json.dumps(report_response)
 

@@ -25,7 +25,7 @@ class DatasetVerificationPandas(DatasetVerification):
     # print(df.loc[1]) #Чтение построчно
     # print(df.columns.values) #Чтение заголовков в виде массива
     # print(df[df.columns.values[0]].values) #Чтение заголовков в виде массива
-    def verify_excel(self, file) -> (list, list, dict, list, list, str, list, list, list, pd.DataFrame):
+    def verify_excel(self, file) -> (list, list, dict, list, list, str, list, list, list, int, pd.DataFrame):
         xls: ExcelFile = pd.ExcelFile(file)
         df: DataFrame = xls.parse(0, parse_dates=False)
         df.columns = df.columns.str.strip()
@@ -36,20 +36,20 @@ class DatasetVerificationPandas(DatasetVerification):
         #
         # print(df1[0])
 
-    def verify_csv(self, file: str) -> (list, list, dict, list, list, str, list, list, list, pd.DataFrame):
+    def verify_csv(self, file: str) -> (list, list, dict, list, list, str, list, list, list, int, pd.DataFrame):
         xl = pd.read_csv(file)
         pass
 
-    def _verify(self, df: pd.DataFrame) -> (list, list, dict, list, list, str, list, list, list, pd.DataFrame):
+    def _verify(self, df: pd.DataFrame) -> (list, list, dict, list, list, str, list, list, list, int, pd.DataFrame):
         legend_values: list = df[df.columns.values[0]].values
         headers: list = df.columns.values
         legend_error_protocol, legend_info_protocol, legend_inc = self._parse_legend_values(legend_values)
         headers_error_protocol, legend_header, data_headers = self._parse_headers(headers,
                                                                                   len(df[df.columns.values[1:]].T))
         values_error_protocol, values_info_protocol, df = self._parse_values(df)
-
+        rows = df.shape[0]
         return legend_error_protocol, legend_info_protocol, legend_inc, legend_values.tolist(), headers_error_protocol, legend_header, \
-               data_headers, values_error_protocol, values_info_protocol,df[df.columns.values[1:]]
+               data_headers, values_error_protocol, values_info_protocol, rows,df[df.columns.values[1:]]
 
     def _parse_legend_values(self, legend_values: list) -> (list, list, dict):
         legend_inc = {'increment': 0, 'type': None}
