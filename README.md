@@ -5,7 +5,7 @@
 This project is designed to predict the data of the presented regression model. The neuroevolutionary algorithm ["Neuroevolution of augmenting topologies"(PDF)](http://nn.cs.utexas.edu/downloads/papers/stanley.ec02.pdf) is used for forecasting.
 The project is presented in a microservice architecture and includes the following components: 
 
-1. [User's requests processing service](https://github.com/SkaaRJik/neatvue) 
+1. [User's requests processing service](https://github.com/SkaaRJik/neatvue) (Should be runed first)
 2. [Data preprocessing service](https://github.com/SkaaRJik/neat-data-preprocessing) <- You are here
 3. [Prediction service](https://github.com/SkaaRJik/neat-executor)
 4. [Graphical user interface](https://github.com/SkaaRJik/neatvue)
